@@ -1,0 +1,51 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ 'main' ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Read Python version
+      run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_ENV
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Add uv to PATH
+      run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Compile dependencies with uv
+      run: uv pip compile pyproject.toml -o requirements.txt
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags:  ghcr.io/fallen-technologies/fallen-ddns:latest
+
+    - name: Prune Docker system
+      run: docker system prune -af
+
+    - name: Clean up workspace
+      run: rm -rf ${{ github.workspace }}/*
