@@ -24,7 +24,7 @@ Perfect for home labs, self-hosted services, or any environment where your publi
 
 ### Docker Compose
 
-Create a `docker-compose.yml` file:
+Create a `compose.yml` file:
 
 ```yaml
 version: '3.8'
