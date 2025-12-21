@@ -83,18 +83,27 @@ def check_ip_loop():
                         )
                         # Update the existing IP
                         old_ip = existing_ip[0].ip_address
-                        from utils.cloudflare_agent import update_records
+                        from utils.cloudflare_agent import update_records, update_firewall_rules
 
-                        status = update_records(old_ip, ip)
-                        if status == False:
+                        # Update DNS records
+                        dns_status = update_records(old_ip, ip)
+                        if dns_status == False:
                             alert_message = (
-                                f"Failed to update records from {old_ip} to {ip}."
+                                f"Failed to update DNS records from {old_ip} to {ip}."
                             )
                         else:
                             alert_message = (
-                                f"Records updated successfully from {old_ip} to {ip}."
+                                f"DNS records updated successfully from {old_ip} to {ip}."
                             )
                         print(alert_message)
+                        
+                        # Update firewall access rules
+                        firewall_status = update_firewall_rules(old_ip, ip)
+                        if firewall_status == False:
+                            print(f"Warning: Failed to update some firewall access rules from {old_ip} to {ip}.")
+                        else:
+                            print(f"Firewall access rules updated successfully from {old_ip} to {ip}.")
+                        
                         # Update the IP in the database
                         print(
                             f"IP has changed from {old_ip} to {ip}. Updating in database."

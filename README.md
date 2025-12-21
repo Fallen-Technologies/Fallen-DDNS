@@ -10,17 +10,21 @@ Perfect for home labs, self-hosted services, or any environment where your publi
 
 - **Automatic IP Monitoring** - Checks your public IP every 5 minutes with randomized jitter
 - **Multi-Zone Support** - Updates DNS records across all Cloudflare zones with a single API key
+- **Firewall Access Rule Management** - Automatically updates Cloudflare firewall access rules when your IP changes
 - **PostgreSQL Integration** - Persistent IP storage for reliable change detection
 - **Docker Ready** - Fully containerized with Docker Compose support
-- **Detailed Logging** - Track every IP change and DNS update
-- **Smart Updates** - Only updates records that actually match your old IP
+- **Detailed Logging** - Track every IP change, DNS update, and firewall rule modification
+- **Smart Updates** - Only updates records and rules that actually match your old IP
 
 ## Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- Cloudflare API token with `Zone:Read` and `DNS:Edit` permissions
+- Cloudflare API token with the following permissions:
+  - `Zone:Read` - To list all zones in your account
+  - `DNS:Edit` - To update DNS records
+  - `Account Firewall Access Rules:Write` - To update firewall access rules
 
 ### Docker Compose
 
@@ -77,20 +81,39 @@ networks:
 3. Click **Create Token**
 4. Select **Create Custom Token**
 5. Set permissions:
-   - **Permissions**: Zone → DNS → Edit
+   - **Permissions**: 
+     - Zone → DNS → Edit
+     - Account → Account Firewall Access Rules → Edit
    - **Zone Resources**: Include → All Zones
+   - **Account Resources**: Include → All Accounts
    - **Client IP Address Filtering**: Leave blank
    - **TTL**: Leave blank
 6. Click **Continue to Summary**
 7. Copy the token and use it as `CF_API_KEY`
+
+## Setting Up Firewall Access Rules
+
+To enable automatic firewall rule updates, you need to create an initial IP access rule in Cloudflare:
+
+1. In Cloudflare, select any domain you own
+2. Go to **Security** → **WAF** → **Tools**
+3. Under **IP Access Rules**, add a new entry:
+   - **IP**: Your current public IP address
+   - **Action**: Allow
+   - **Zone**: All websites in account
+   - **Note**: Add a description (e.g., "Home network access")
+4. Click **Add**
+
+This creates an account-level firewall rule that whitelists your IP address across all domains in your Cloudflare account. When your IP changes, Fallen DDNS will automatically delete this rule and recreate it with your new IP address, ensuring uninterrupted access to your protected sites.
 
 ## How It Works
 
 1. **IP Check** - Every 5 minutes (±60 seconds jitter), the service retrieves your current public IP
 2. **Comparison** - Compares the current IP with the stored IP in PostgreSQL
 3. **Zone Scan** - If changed, fetches all zones from your Cloudflare account
-4. **Record Update** - Identifies and updates all A records pointing to the old IP
-5. **Database Update** - Stores the new IP for future comparisons
+4. **DNS Record Update** - Identifies and updates all A records pointing to the old IP
+5. **Firewall Rule Update** - Updates all firewall access rules that reference the old IP
+6. **Database Update** - Stores the new IP for future comparisons
 
 ## Support
 
